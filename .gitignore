@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+.expo/
+dist/
+build/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Android/iOS specific (managed by Expo or local builds)
+android/.gradle/
+android/app/build/
+android/local.properties
+ios/Pods/
+ios/build/

@@ -29,6 +29,12 @@
     },
 
     "plugins": ["expo-router", "expo-dev-client"],
-    "scheme": "chronos-zenith"
+    "scheme": "chronos-zenith",
+
+    "extra": {
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      }
+    }
   }
 }

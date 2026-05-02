@@ -1,18 +1,25 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://YOUR_RENDER_APP_NAME.onrender.com';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002';
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 10000,
 });
 
-// Attach JWT token from AsyncStorage on every request
-apiClient.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem('cz_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+// Attach JWT token from Zustand persisted store on every request
+apiClient.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('cz-auth');
+      if (stored) {
+        const { state } = JSON.parse(stored);
+        if (state?.token) config.headers.Authorization = `Bearer ${state.token}`;
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }
   return config;
 });
 
@@ -43,42 +50,42 @@ export const authApi = {
 
 // ── Tasks ────────────────────────────────────────────────────────────────────
 export const tasksApi = {
-  getByDate: async (date: string): Promise<Task[]> => {
+  getByDate: async (date: string) => {
     const { data } = await apiClient.get(`/tasks/${date}`);
-    return data.data;
+    return data.data as Task[];
   },
-  getByRange: async (start: string, end: string): Promise<Task[]> => {
+  getByRange: async (start: string, end: string) => {
     const { data } = await apiClient.get(`/tasks/range?start=${start}&end=${end}`);
-    return data.data;
+    return data.data as Task[];
   },
-  create: async (payload: { title: string; date?: string }): Promise<Task> => {
+  create: async (payload: { title: string; date?: string }) => {
     const { data } = await apiClient.post('/tasks', payload);
-    return data.data;
+    return data.data as Task;
   },
-  toggle: async (id: string): Promise<{ task: Task; currentStreak: number; totalRating: number; totalTasksCompleted: number; totalTasksAssigned: number }> => {
+  toggle: async (id: string) => {
     const { data } = await apiClient.patch(`/tasks/${id}`);
     return {
-      task: data.data,
-      currentStreak: data.currentStreak,
-      totalRating: data.totalRating,
-      totalTasksCompleted: data.totalTasksCompleted,
-      totalTasksAssigned: data.totalTasksAssigned,
+      task: data.data as Task,
+      currentStreak: data.currentStreak as number,
+      totalRating: data.totalRating as number,
+      totalTasksCompleted: data.totalTasksCompleted as number,
+      totalTasksAssigned: data.totalTasksAssigned as number,
     };
   },
-  delete: async (id: string): Promise<void> => {
+  delete: async (id: string) => {
     await apiClient.delete(`/tasks/${id}`);
   },
-  update: async (id: string, payload: { title: string; date: string }): Promise<Task> => {
+  update: async (id: string, payload: { title: string; date: string }) => {
     const { data } = await apiClient.put(`/tasks/${id}`, payload);
-    return data.data;
+    return data.data as Task;
   },
 };
 
 // ── Stats ────────────────────────────────────────────────────────────────────
 export const statsApi = {
-  getByDate: async (date: string): Promise<DailyStats> => {
+  getByDate: async (date: string) => {
     const { data } = await apiClient.get(`/stats/${date}`);
-    return data.data;
+    return data.data as DailyStats;
   },
   getHistory: async (limit = 30) => {
     const { data } = await apiClient.get(`/stats/history?limit=${limit}`);
