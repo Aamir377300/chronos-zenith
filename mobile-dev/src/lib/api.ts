@@ -1,7 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://YOUR_RENDER_APP_NAME.onrender.com';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://chronos-zenith.onrender.com';
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,

@@ -7,7 +7,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://YOUR_RENDER_APP_NAME.onrender.com"
+        "EXPO_PUBLIC_API_URL": "https://chronos-zenith.onrender.com"
       }
     },
     "preview": {
@@ -16,12 +16,12 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://YOUR_RENDER_APP_NAME.onrender.com"
+        "EXPO_PUBLIC_API_URL": "https://chronos-zenith.onrender.com"
       }
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://YOUR_RENDER_APP_NAME.onrender.com"
+        "EXPO_PUBLIC_API_URL": "https://chronos-zenith.onrender.com"
       }
     }
   },
