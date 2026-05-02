@@ -210,7 +210,7 @@ This will:
 ### 4e. Build the APK
 
 ```bash
-eas build --platform android --profile preview
+npx eas build --platform android --profile preview
 ```
 
 This builds in Expo's cloud (~10–15 minutes). When done, EAS gives you a **download link** for the `.apk` file.
