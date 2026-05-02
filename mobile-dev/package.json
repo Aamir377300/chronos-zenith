@@ -1,0 +1,36 @@
+{
+  "name": "chronos-zenith-mobile",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "axios": "^1.6.5",
+    "date-fns": "^3.2.0",
+    "expo": "~55.0.0",
+    "expo-constants": "~55.0.15",
+    "expo-dev-client": "~55.0.30",
+    "expo-font": "~55.0.6",
+    "expo-linking": "~55.0.14",
+    "expo-router": "~55.0.13",
+    "expo-splash-screen": "~55.0.19",
+    "expo-status-bar": "~55.0.5",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-native": "0.83.6",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.23.0",
+    "react-native-web": "^0.21.0",
+    "zustand": "^4.4.7"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.0",
+    "@types/react": "~19.1.10",
+    "typescript": "^5.3.3"
+  }
+}
