@@ -6,16 +6,15 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
-    "assetBundlePatterns": ["**/*"],
-
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "icon": "./assets/icon.png",
-
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.chronoszenith.app",
       "icon": "./assets/icon.png"
     },
-
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -23,18 +22,20 @@
       },
       "package": "com.chronoszenith.app"
     },
-
     "web": {
       "bundler": "metro"
     },
-
-    "plugins": ["expo-router", "expo-dev-client"],
+    "plugins": [
+      "expo-router",
+      "expo-dev-client"
+    ],
     "scheme": "chronos-zenith",
-
     "extra": {
       "eas": {
-        "projectId": "YOUR_EAS_PROJECT_ID"
-      }
-    }
+        "projectId": "04a94f31-4fd6-44a4-9966-06bd5ae6b5fc"
+      },
+      "router": {}
+    },
+    "owner": "belalaamirkhan"
   }
 }
