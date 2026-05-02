@@ -1,0 +1,5 @@
+<resources>
+  <string name="app_name">Chronos Zenith</string>
+  <string name="timeline_widget_description">Shows today\'s tasks in a timeline</string>
+  <string name="score_widget_description">Shows your daily score and streak</string>
+</resources>
