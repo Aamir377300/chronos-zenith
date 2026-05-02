@@ -109,7 +109,7 @@ In the Render dashboard under **Environment**, add these variables:
 ```
 PORT=5002
 MONGODB_URI=mongodb+srv://belalaamirkhan_db_user:ZtUCzXPX6gbhMG2s@cluster0.k202xxm.mongodb.net/?appName=Cluster0
-JWT_SECRET=<generate a random 64-character string>
+JWT_SECRET=my_jwt_token
 JWT_EXPIRES_IN=7d
 NODE_ENV=production
 ```

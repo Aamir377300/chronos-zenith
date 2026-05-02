@@ -6,7 +6,7 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://YOUR_RENDER_APP_NAM
 export const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 10000,
+  timeout: 40000,
 });
 
 // Attach JWT token from AsyncStorage on every request

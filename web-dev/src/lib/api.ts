@@ -5,6 +5,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002';
 export const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
+  timeout: 40000,
 });
 
 // Attach JWT token from Zustand persisted store on every request
