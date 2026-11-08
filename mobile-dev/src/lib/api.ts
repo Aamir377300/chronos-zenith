@@ -1,7 +1,8 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { usePasscodeStore } from '@/store/passcodeStore';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://chronos-zenith.onrender.com';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://chronos-zenith-api.onrender.com';
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -9,34 +10,32 @@ export const apiClient = axios.create({
   timeout: 40000,
 });
 
-// Attach JWT token from AsyncStorage on every request
+// Attach passcode from memory or AsyncStorage on every request
 apiClient.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem('cz_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  let passcode = usePasscodeStore.getState().passcode;
+  if (!passcode) {
+    passcode = await AsyncStorage.getItem('cz_passcode');
+  }
+  if (passcode) config.headers['x-passcode'] = passcode;
   return config;
 });
 
-// Normalize error messages
+// Normalize errors; clear passcode on 401 so the unlock screen shows again
 apiClient.interceptors.response.use(
   (res) => res,
-  (error) => {
+  async (error) => {
+    if (error.response?.status === 401) {
+      await usePasscodeStore.getState().clearPasscode();
+    }
     const message = error.response?.data?.message || error.message || 'Request failed';
     return Promise.reject(new Error(message));
   }
 );
 
-// ── Auth ─────────────────────────────────────────────────────────────────────
-export const authApi = {
-  register: async (email: string, password: string) => {
-    const { data } = await apiClient.post('/auth/register', { email, password });
-    return data;
-  },
-  login: async (email: string, password: string) => {
-    const { data } = await apiClient.post('/auth/login', { email, password });
-    return data;
-  },
+// ── Owner profile ────────────────────────────────────────────────────────────
+export const ownerApi = {
   getMe: async () => {
-    const { data } = await apiClient.get('/auth/me');
+    const { data } = await apiClient.get('/me');
     return data;
   },
 };
@@ -89,7 +88,7 @@ export const statsApi = {
 // ── Types ────────────────────────────────────────────────────────────────────
 export interface Task {
   _id: string;
-  userId: string;
+  userId?: string;
   title: string;
   date: string;
   time?: string | null;

@@ -60,7 +60,7 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Main Stats Row: fraction pill + rating -->
+    <!-- Today's fraction -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -101,29 +101,6 @@
                 android:text="0"
                 android:textColor="#10B981"
                 android:textSize="28sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <!-- Rating -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_marginStart="24dp">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="RATING"
-                android:textColor="#9CA3AF"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-            <TextView
-                android:id="@+id/rating_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0"
-                android:textColor="#3B82F6"
-                android:textSize="32sp"
                 android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>

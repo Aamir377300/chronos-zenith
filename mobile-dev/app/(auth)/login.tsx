@@ -3,6 +3,7 @@ import {
   View,
   Text,
   TextInput,
+  Image,
   TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
@@ -11,36 +12,36 @@ import {
   ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuthStore } from '@/store/authStore';
-import { authApi } from '@/lib/api';
+import { usePasscodeStore } from '@/store/passcodeStore';
+import { ownerApi } from '@/lib/api';
 import { Colors } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function LoginScreen() {
+export default function PasscodeScreen() {
   const router = useRouter();
-  const setAuth = useAuthStore((s) => s.setAuth);
+  const setPasscode = usePasscodeStore((s) => s.setPasscode);
+  const setUser = usePasscodeStore((s) => s.setUser);
+  const clearPasscode = usePasscodeStore((s) => s.clearPasscode);
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isRegister, setIsRegister] = useState(false);
+  const [value, setValue] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!email.trim() || !password.trim()) {
-      setError('Please fill in all fields');
+    if (!value.trim()) {
+      setError('Please enter the passcode');
       return;
     }
     setError('');
     setLoading(true);
     try {
-      const data = isRegister
-        ? await authApi.register(email.trim(), password)
-        : await authApi.login(email.trim(), password);
-      await setAuth(data.token, data.user);
+      await setPasscode(value.trim());
+      const data = await ownerApi.getMe();
+      await setUser(data.user);
       router.replace('/(tabs)/home');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      await clearPasscode();
+      setError(err instanceof Error ? err.message : 'Invalid passcode');
     } finally {
       setLoading(false);
     }
@@ -53,46 +54,29 @@ export default function LoginScreen() {
         style={styles.flex}
       >
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-          {/* Logo */}
           <View style={styles.logoContainer}>
-            <View style={styles.logoBox}>
-              <Text style={styles.logoText}>CZ</Text>
-            </View>
+            <Image source={require('../../assets/icon.png')} style={styles.logo} />
             <Text style={styles.appName}>Chronos Zenith</Text>
-            <Text style={styles.tagline}>
-              {isRegister ? 'Create your account' : 'Welcome back'}
-            </Text>
+            <Text style={styles.tagline}>Enter passcode</Text>
           </View>
 
-          {/* Error */}
           {error ? (
             <View style={styles.errorBox}>
               <Text style={styles.errorText}>{error}</Text>
             </View>
           ) : null}
 
-          {/* Form */}
           <View style={styles.form}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>Passcode</Text>
             <TextInput
               style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="you@example.com"
-              placeholderTextColor={Colors.textMuted}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
+              value={value}
+              onChangeText={setValue}
               placeholder="••••••••"
               placeholderTextColor={Colors.textMuted}
               secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
             />
 
             <TouchableOpacity
@@ -103,22 +87,8 @@ export default function LoginScreen() {
               {loading ? (
                 <ActivityIndicator color={Colors.white} />
               ) : (
-                <Text style={styles.submitText}>
-                  {isRegister ? 'Create Account' : 'Sign In'}
-                </Text>
+                <Text style={styles.submitText}>Unlock</Text>
               )}
-            </TouchableOpacity>
-          </View>
-
-          {/* Toggle */}
-          <View style={styles.toggleRow}>
-            <Text style={styles.toggleLabel}>
-              {isRegister ? 'Already have an account? ' : "Don't have an account? "}
-            </Text>
-            <TouchableOpacity onPress={() => setIsRegister(!isRegister)}>
-              <Text style={styles.toggleLink}>
-                {isRegister ? 'Sign in' : 'Sign up'}
-              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -137,16 +107,12 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   logoContainer: { alignItems: 'center', marginBottom: 40 },
-  logoBox: {
-    width: 64,
-    height: 64,
-    backgroundColor: Colors.blue,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+  logo: {
+    width: 88,
+    height: 88,
+    borderRadius: 22,
     marginBottom: 12,
   },
-  logoText: { color: Colors.white, fontSize: 22, fontWeight: '800' },
   appName: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary },
   tagline: { fontSize: 14, color: Colors.textSecondary, marginTop: 4 },
   errorBox: {
@@ -182,11 +148,4 @@ const styles = StyleSheet.create({
   },
   submitBtnDisabled: { backgroundColor: '#93C5FD' },
   submitText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
-  toggleRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 24,
-  },
-  toggleLabel: { fontSize: 14, color: Colors.textSecondary },
-  toggleLink: { fontSize: 14, color: Colors.blue, fontWeight: '600' },
 });

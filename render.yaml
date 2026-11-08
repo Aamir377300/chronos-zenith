@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: chronos-zenith-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: APP_PASSCODE
+        sync: false
+
+  - type: web
+    name: chronos-zenith-web
+    runtime: node
+    rootDir: web-dev
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        value: https://chronos-zenith-api.onrender.com

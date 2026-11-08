@@ -1,16 +1,13 @@
 /**
- * Seed script — populates the DB with a demo user and sample tasks
+ * Seed script — populates the DB with the single owner and sample tasks
  * Run: node src/scripts/seed.js
  */
 require('dotenv').config();
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Task = require('../models/Task');
 const DailyStats = require('../models/DailyStats');
-
-const DEMO_EMAIL = 'belalaamirkhan@gmail.com';
-const DEMO_PASSWORD = 'aamirkhan';
+const { OWNER_EMAIL } = require('../utils/owner');
 
 const today = new Date().toISOString().split('T')[0];
 const yesterday = (() => {
@@ -37,62 +34,54 @@ async function seed() {
   await mongoose.connect(process.env.MONGODB_URI);
   console.log('✅ Connected to MongoDB');
 
-  // Clean up existing demo data
-  const existing = await User.findOne({ email: DEMO_EMAIL });
-  if (existing) {
-    await Task.deleteMany({ userId: existing._id });
-    await DailyStats.deleteMany({ userId: existing._id });
-    await User.deleteOne({ _id: existing._id });
-    console.log('🧹 Cleaned up existing demo data');
-  }
+  // Reset to a clean single-owner dataset
+  await Task.deleteMany({});
+  await DailyStats.deleteMany({});
+  await User.deleteMany({});
+  console.log('🧹 Cleared existing data');
 
-  // Create demo user
   const user = await User.create({
-    email: DEMO_EMAIL,
-    password: DEMO_PASSWORD,
+    email: OWNER_EMAIL,
+    password: 'unused-single-user',
     currentStreak: 1,
     lastCompletedDate: yesterday,
   });
-  console.log(`👤 Created demo user: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
+  console.log(`👤 Created owner: ${OWNER_EMAIL}`);
 
-  // Create today's tasks
   const todayDocs = await Task.insertMany(
     sampleTasks.map((t) => ({ ...t, userId: user._id, date: today }))
   );
   console.log(`📋 Created ${todayDocs.length} tasks for today (${today})`);
 
-  // Create yesterday's tasks (all complete)
   const yesterdayDocs = await Task.insertMany(
     yesterdayTasks.map((t) => ({ ...t, userId: user._id, date: yesterday }))
   );
   console.log(`📋 Created ${yesterdayDocs.length} tasks for yesterday (${yesterday})`);
 
-  // Create DailyStats for today
   const todayCompleted = sampleTasks.filter((t) => t.isCompleted).length;
   await DailyStats.create({
     userId: user._id,
     date: today,
     totalTasks: sampleTasks.length,
     completedTasks: todayCompleted,
-    totalScore: sampleTasks.length * 10,
-    achievedScore: todayCompleted * 10,
+    totalScore: sampleTasks.length,
+    achievedScore: todayCompleted,
     bonusApplied: false,
   });
 
-  // Create DailyStats for yesterday (all complete, no bonus since it's day 1)
   await DailyStats.create({
     userId: user._id,
     date: yesterday,
     totalTasks: yesterdayTasks.length,
     completedTasks: yesterdayTasks.length,
-    totalScore: yesterdayTasks.length * 10,
-    achievedScore: yesterdayTasks.length * 10,
+    totalScore: yesterdayTasks.length,
+    achievedScore: yesterdayTasks.length,
     bonusApplied: false,
   });
 
   console.log('📊 Created DailyStats for both days');
   console.log('\n✅ Seed complete!');
-  console.log(`\n🔑 Login credentials:\n   Email: ${DEMO_EMAIL}\n   Password: ${DEMO_PASSWORD}`);
+  console.log(`\n🔑 Use APP_PASSCODE from your .env to unlock the app.`);
 
   await mongoose.disconnect();
 }

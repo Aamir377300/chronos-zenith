@@ -3,7 +3,7 @@ const User = require('../models/User');
 
 /**
  * GET /stats/:date
- * Returns DailyStats for a specific date
+ * Returns DailyStats for a specific date (single-user owner)
  */
 const getStatsByDate = async (req, res, next) => {
   try {
@@ -11,7 +11,6 @@ const getStatsByDate = async (req, res, next) => {
     const stats = await DailyStats.findOne({ userId: req.user._id, date });
 
     if (!stats) {
-      // Return zeroed stats if no data yet
       return res.json({
         success: true,
         data: {
@@ -33,7 +32,7 @@ const getStatsByDate = async (req, res, next) => {
 
 /**
  * GET /stats/history
- * Returns last 30 days of stats for the authenticated user
+ * Returns last N days of stats for the single-user owner
  */
 const getStatsHistory = async (req, res, next) => {
   try {
@@ -51,6 +50,9 @@ const getStatsHistory = async (req, res, next) => {
         history,
         currentStreak: user.currentStreak,
         lastCompletedDate: user.lastCompletedDate,
+        totalRating: user.totalRating,
+        totalTasksCompleted: user.totalTasksCompleted,
+        totalTasksAssigned: user.totalTasksAssigned,
       },
     });
   } catch (error) {

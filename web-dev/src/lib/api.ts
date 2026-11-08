@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { usePasscodeStore } from '@/store/passcodeStore';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002';
 
@@ -8,43 +9,39 @@ export const apiClient = axios.create({
   timeout: 40000,
 });
 
-// Attach JWT token from Zustand persisted store on every request
+// Attach passcode from in-memory store (falls back to localStorage)
 apiClient.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    try {
-      const stored = localStorage.getItem('cz-auth');
-      if (stored) {
-        const { state } = JSON.parse(stored);
-        if (state?.token) config.headers.Authorization = `Bearer ${state.token}`;
+    let passcode = usePasscodeStore.getState().passcode;
+    if (!passcode) {
+      try {
+        const stored = localStorage.getItem('cz-passcode');
+        if (stored) passcode = JSON.parse(stored)?.state?.passcode ?? null;
+      } catch {
+        // ignore parse errors
       }
-    } catch {
-      // ignore parse errors
     }
+    if (passcode) config.headers['x-passcode'] = passcode;
   }
   return config;
 });
 
-// Normalize error messages
+// Normalize errors; clear passcode on 401 so the gate shows again
 apiClient.interceptors.response.use(
   (res) => res,
   (error) => {
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      usePasscodeStore.getState().clearPasscode();
+    }
     const message = error.response?.data?.message || error.message || 'Request failed';
     return Promise.reject(new Error(message));
   }
 );
 
-// ── Auth ─────────────────────────────────────────────────────────────────────
-export const authApi = {
-  register: async (email: string, password: string) => {
-    const { data } = await apiClient.post('/auth/register', { email, password });
-    return data;
-  },
-  login: async (email: string, password: string) => {
-    const { data } = await apiClient.post('/auth/login', { email, password });
-    return data;
-  },
+// ── Owner profile ────────────────────────────────────────────────────────────
+export const ownerApi = {
   getMe: async () => {
-    const { data } = await apiClient.get('/auth/me');
+    const { data } = await apiClient.get('/me');
     return data;
   },
 };
@@ -62,6 +59,10 @@ export const tasksApi = {
   create: async (payload: { title: string; date?: string }) => {
     const { data } = await apiClient.post('/tasks', payload);
     return data.data as Task;
+  },
+  createSet: async (payload: { titles: string[]; dates: string[] }) => {
+    const { data } = await apiClient.post('/tasks/set', payload);
+    return data.created as number;
   },
   toggle: async (id: string) => {
     const { data } = await apiClient.patch(`/tasks/${id}`);
@@ -97,7 +98,7 @@ export const statsApi = {
 // ── Types ────────────────────────────────────────────────────────────────────
 export interface Task {
   _id: string;
-  userId: string;
+  userId?: string;
   title: string;
   date: string;
   time?: string | null;

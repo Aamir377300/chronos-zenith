@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useAuthStore } from '@/store/authStore';
+import { usePasscodeStore } from '@/store/passcodeStore';
 
 export default function RootLayout() {
-  const loadFromStorage = useAuthStore((s) => s.loadFromStorage);
+  const loadFromStorage = usePasscodeStore((s) => s.loadFromStorage);
 
   useEffect(() => {
     loadFromStorage();

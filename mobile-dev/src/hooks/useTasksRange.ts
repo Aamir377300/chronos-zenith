@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { tasksApi, statsApi, type Task, type DailyStats } from '@/lib/api';
-import { useAuthStore } from '@/store/authStore';
+import { usePasscodeStore } from '@/store/passcodeStore';
 
 export const useTasksRange = (start: string, end: string, selectedDate: string) => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -40,7 +40,7 @@ export const useTasksRange = (start: string, end: string, selectedDate: string) 
       const { task: updatedTask, currentStreak, totalRating, totalTasksCompleted, totalTasksAssigned } = await tasksApi.toggle(id);
 
       // Update user fields directly from toggle response
-      useAuthStore.getState().updateUser({ currentStreak, totalRating, totalTasksCompleted, totalTasksAssigned });
+      usePasscodeStore.getState().updateUser({ currentStreak, totalRating, totalTasksCompleted, totalTasksAssigned });
 
       // Update the task in state with server response
       setTasks((prev) => prev.map((t) => (t._id === id ? updatedTask : t)));

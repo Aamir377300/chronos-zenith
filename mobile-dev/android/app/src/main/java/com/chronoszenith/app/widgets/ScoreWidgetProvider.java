@@ -13,7 +13,7 @@ import com.chronoszenith.app.MainActivity;
 import com.chronoszenith.app.R;
 
 /**
- * Score Widget — Pill-based layout showing all-time task completion and rating.
+ * Score Widget — today's finished tasks and the streak.
  */
 public class ScoreWidgetProvider extends AppWidgetProvider {
 
@@ -41,12 +41,10 @@ public class ScoreWidgetProvider extends AppWidgetProvider {
 
         int     completed    = WidgetDataStore.getAllTimeCompleted(context);
         int     total        = WidgetDataStore.getAllTimeAssigned(context);
-        int     totalRating  = WidgetDataStore.getTotalRating(context);
         int     streak       = WidgetDataStore.getStreak(context);
 
         views.setTextViewText(R.id.completed_count, String.valueOf(completed));
         views.setTextViewText(R.id.total_count,     String.valueOf(total));
-        views.setTextViewText(R.id.rating_text,     String.valueOf(totalRating));
         views.setTextViewText(R.id.streak_text,     String.valueOf(streak));
 
         long lastSync = WidgetDataStore.getLastSync(context);

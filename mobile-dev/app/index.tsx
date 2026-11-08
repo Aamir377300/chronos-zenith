@@ -1,10 +1,10 @@
 import { Redirect } from 'expo-router';
-import { useAuthStore } from '@/store/authStore';
+import { usePasscodeStore } from '@/store/passcodeStore';
 import { View, ActivityIndicator } from 'react-native';
 import { Colors } from '@/constants/colors';
 
 export default function Index() {
-  const { token, isLoading } = useAuthStore();
+  const { passcode, isLoading } = usePasscodeStore();
 
   if (isLoading) {
     return (
@@ -14,5 +14,5 @@ export default function Index() {
     );
   }
 
-  return <Redirect href={token ? '/(tabs)/home' : '/(auth)/login'} />;
+  return <Redirect href={passcode ? '/(tabs)/home' : '/(auth)/login'} />;
 }

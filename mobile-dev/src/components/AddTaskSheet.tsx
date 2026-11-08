@@ -6,9 +6,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   Modal,
-  KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Keyboard,
+  ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { Colors } from '@/constants/colors';
 import { format } from 'date-fns';
@@ -29,6 +31,8 @@ export const AddTaskSheet: React.FC<Props> = ({ visible, onClose, onAdd, onEdit,
   const [schedule, setSchedule] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const { height: windowHeight } = useWindowDimensions();
 
   React.useEffect(() => {
     if (visible && editingTask) {
@@ -39,6 +43,19 @@ export const AddTaskSheet: React.FC<Props> = ({ visible, onClose, onAdd, onEdit,
       setSchedule(initialDate || format(new Date(), 'yyyy-MM-dd'));
     }
   }, [visible, editingTask, initialDate]);
+
+  React.useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const handleAdd = async () => {
     if (!title.trim()) {
@@ -65,65 +82,76 @@ export const AddTaskSheet: React.FC<Props> = ({ visible, onClose, onAdd, onEdit,
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.sheetWrapper}
-      >
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
-          <Text style={styles.heading}>{editingTask ? 'Edit Task' : 'Add Task'}</Text>
+      <View style={styles.root}>
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose} />
+        <View
+          style={[
+            {
+              marginBottom: keyboardHeight,
+              maxHeight: Math.max(windowHeight - keyboardHeight - 16, 220),
+            },
+          ]}
+        >
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.sheet}>
+              <View style={styles.handle} />
+              <Text style={styles.heading}>{editingTask ? 'Edit Task' : 'Add Task'}</Text>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+              {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <Text style={styles.fieldLabel}>Title</Text>
-          <TextInput
-            style={styles.input}
-            value={title}
-            onChangeText={setTitle}
-            placeholder="What do you need to do?"
-            placeholderTextColor={Colors.textMuted}
-            autoFocus
-            returnKeyType="next"
-          />
+              <Text style={styles.fieldLabel}>Title</Text>
+              <TextInput
+                style={styles.input}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="What do you need to do?"
+                placeholderTextColor={Colors.textMuted}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={handleAdd}
+              />
 
-          <Text style={styles.fieldLabel}>Schedule</Text>
-          <View style={{ marginHorizontal: -24 }}>
-            <CalendarStrip selectedDate={schedule} onSelectDate={setSchedule} />
-          </View>
+              <Text style={styles.fieldLabel}>Schedule</Text>
+              <View style={{ marginHorizontal: -24 }}>
+                <CalendarStrip selectedDate={schedule} onSelectDate={setSchedule} />
+              </View>
 
-          <View style={styles.actions}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.addBtn, loading && styles.addBtnDisabled]}
-              onPress={handleAdd}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color={Colors.white} size="small" />
-              ) : (
-                <Text style={styles.addText}>{editingTask ? 'Save Changes' : 'Add Task'}</Text>
-              )}
-            </TouchableOpacity>
-          </View>
+              <View style={styles.actions}>
+                <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.addBtn, loading && styles.addBtnDisabled]}
+                  onPress={handleAdd}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color={Colors.white} size="small" />
+                  ) : (
+                    <Text style={styles.addText}>{editingTask ? 'Save Changes' : 'Add Task'}</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
+  root: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
   },
-  sheetWrapper: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
   sheet: {
     backgroundColor: Colors.white,

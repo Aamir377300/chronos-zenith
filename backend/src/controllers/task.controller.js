@@ -7,7 +7,8 @@ const { todayString } = require('../utils/dateHelpers');
 const getTasksByDate = async (req, res, next) => {
   try {
     const { date } = req.params;
-    const tasks = await Task.find({ userId: req.user._id, date }).sort({ createdAt: 1 });
+    // Single-user: all tasks for the date belong to the fixed owner
+    const tasks = await Task.find({ date }).sort({ createdAt: 1 });
     res.json({ success: true, data: tasks });
   } catch (error) {
     next(error);
@@ -21,7 +22,6 @@ const getTasksByRange = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Start and end dates are required' });
     }
     const tasks = await Task.find({
-      userId: req.user._id,
       date: { $gte: start, $lte: end },
     }).sort({ date: 1, createdAt: 1 });
     res.json({ success: true, data: tasks });
@@ -39,14 +39,15 @@ const createTask = async (req, res, next) => {
 
     const { title, date } = req.body;
     const taskDate = date || todayString();
+    const ownerId = req.user._id;
 
     const task = await Task.create({
-      userId: req.user._id,
+      userId: ownerId,
       title,
       date: taskDate,
     });
 
-    await recalculateStats(req.user._id, taskDate);
+    await recalculateStats(ownerId, taskDate);
 
     res.status(201).json({ success: true, data: task });
   } catch (error) {
@@ -62,21 +63,24 @@ const updateTask = async (req, res, next) => {
     }
 
     const { title, date } = req.body;
-    const task = await Task.findOne({ _id: req.params.id, userId: req.user._id });
+    const task = await Task.findById(req.params.id);
 
     if (!task) {
       return res.status(404).json({ success: false, message: 'Task not found' });
     }
 
+    const ownerId = req.user._id;
     const oldDate = task.date;
     task.title = title;
     task.date = date;
+    // Keep ownership on the fixed owner
+    task.userId = ownerId;
     await task.save();
 
     if (oldDate !== date) {
-      await recalculateStats(req.user._id, oldDate);
+      await recalculateStats(ownerId, oldDate);
     }
-    await recalculateStats(req.user._id, date);
+    await recalculateStats(ownerId, date);
 
     res.json({ success: true, data: task });
   } catch (error) {
@@ -86,18 +90,20 @@ const updateTask = async (req, res, next) => {
 
 const toggleTask = async (req, res, next) => {
   try {
-    const task = await Task.findOne({ _id: req.params.id, userId: req.user._id });
+    const task = await Task.findById(req.params.id);
 
     if (!task) {
       return res.status(404).json({ success: false, message: 'Task not found' });
     }
 
+    const ownerId = req.user._id;
     task.isCompleted = !task.isCompleted;
+    task.userId = ownerId;
     await task.save();
 
-    await recalculateStats(req.user._id, task.date);
+    await recalculateStats(ownerId, task.date);
 
-    const updatedUser = await User.findById(req.user._id);
+    const updatedUser = await User.findById(ownerId);
 
     res.json({
       success: true,
@@ -114,7 +120,7 @@ const toggleTask = async (req, res, next) => {
 
 const deleteTask = async (req, res, next) => {
   try {
-    const task = await Task.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
+    const task = await Task.findByIdAndDelete(req.params.id);
 
     if (!task) {
       return res.status(404).json({ success: false, message: 'Task not found' });
@@ -128,4 +134,48 @@ const deleteTask = async (req, res, next) => {
   }
 };
 
-module.exports = { getTasksByDate, getTasksByRange, createTask, toggleTask, updateTask, deleteTask };
+/**
+ * POST /tasks/set
+ * Create a set of titles on each given date, skipping titles already present that day.
+ * Dates are filled one after another so streak/rating updates stay consistent.
+ */
+const createTaskSet = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
+    const titles = [...new Set(req.body.titles.map((t) => String(t).trim()).filter(Boolean))];
+    const dates = [...new Set(req.body.dates)];
+    const ownerId = req.user._id;
+
+    const existing = await Task.find({
+      date: { $in: dates },
+      title: { $in: titles },
+    }).select('title date');
+
+    const have = new Set(existing.map((t) => `${t.date}|${t.title.trim().toLowerCase()}`));
+    const docs = [];
+    for (const date of dates) {
+      for (const title of titles) {
+        if (have.has(`${date}|${title.toLowerCase()}`)) continue;
+        docs.push({ userId: ownerId, title, date, isCompleted: false });
+      }
+    }
+
+    if (docs.length) {
+      await Task.insertMany(docs);
+      const affected = [...new Set(docs.map((d) => d.date))].sort();
+      for (const date of affected) {
+        await recalculateStats(ownerId, date);
+      }
+    }
+
+    res.status(201).json({ success: true, created: docs.length });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { getTasksByDate, getTasksByRange, createTask, toggleTask, updateTask, deleteTask, createTaskSet };

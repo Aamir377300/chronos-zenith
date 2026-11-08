@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useAuthStore } from '@/store/authStore';
+import { usePasscodeStore } from '@/store/passcodeStore';
 import clsx from 'clsx';
 
 interface Props {
@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function ScoreCard({ achievedScore, totalScore, streak }: Props) {
-  const user = useAuthStore((s) => s.user);
+  const user = usePasscodeStore((s) => s.user);
   const percentage = totalScore > 0 ? Math.min((achievedScore / totalScore) * 100, 100) : 0;
 
   return (
@@ -25,7 +25,6 @@ export function ScoreCard({ achievedScore, totalScore, streak }: Props) {
           </div>
         </div>
 
-        {/* Streak badge */}
         <div className="text-right">
           <div
             className={clsx(
@@ -44,7 +43,6 @@ export function ScoreCard({ achievedScore, totalScore, streak }: Props) {
         </div>
       </div>
 
-      {/* Progress bar */}
       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
         <motion.div
           className="h-full bg-blue-500 rounded-full"

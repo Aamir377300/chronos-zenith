@@ -23,3 +23,9 @@ android/app/build/
 android/local.properties
 ios/Pods/
 ios/build/
+
+# Next.js build output
+web-dev/.next/
+
+# Local screenshots
+cz-*.png

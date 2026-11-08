@@ -16,7 +16,17 @@ const MISSED_DAY_PENALTY = 1;
  * @returns {Promise<DailyStats>}
  */
 const recalculateStats = async (userId, date) => {
-  const tasks = await Task.find({ userId, date });
+  // These three reads do not depend on each other.
+  const [tasks, user, prevStats] = await Promise.all([
+    Task.find({ date }),
+    User.findById(userId),
+    DailyStats.findOne({ userId, date }),
+  ]);
+  // Only rewrite ownership when a task is not already on the owner.
+  const ownerId = String(userId);
+  if (tasks.some((t) => String(t.userId) !== ownerId)) {
+    await Task.updateMany({ date, userId: { $ne: userId } }, { userId });
+  }
 
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((t) => t.isCompleted).length;
@@ -27,7 +37,6 @@ const recalculateStats = async (userId, date) => {
   let achievedScore = baseAchievedScore;
 
   const isFullCompletion = totalTasks > 0 && completedTasks === totalTasks;
-  const user = await User.findById(userId);
   const [year, month, day] = date.split('-').map(Number);
   const dateObj = new Date(year, month - 1, day);
   dateObj.setDate(dateObj.getDate() - 1);
@@ -36,9 +45,7 @@ const recalculateStats = async (userId, date) => {
   const yDay = String(dateObj.getDate()).padStart(2, '0');
   const yesterday = `${yYear}-${yMonth}-${yDay}`;
 
-  // Fetch the previous DailyStats for this date (before this recalculation)
-  // so we can compute the delta for the all-time rating.
-  const prevStats = await DailyStats.findOne({ userId, date });
+  // Previous DailyStats for this date, used to compute the all-time rating delta.
   const prevCompleted = prevStats?.completedTasks ?? 0;
   const prevTotal = prevStats?.totalTasks ?? 0;
   const prevBonus = prevStats?.bonusApplied ?? false;

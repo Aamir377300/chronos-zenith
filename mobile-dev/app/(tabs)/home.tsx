@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/colors';
 import { useTasksRange } from '@/hooks/useTasksRange';
-import { useAuthStore } from '@/store/authStore';
+import { usePasscodeStore } from '@/store/passcodeStore';
 import { TimelineItem } from '@/components/TimelineItem';
 import { ScoreWidget } from '@/components/ScoreWidget';
 import { AddTaskSheet } from '@/components/AddTaskSheet';
@@ -22,13 +22,31 @@ import { RatingBadge } from '@/components/RatingBadge';
 import { useWidgetSync } from '@/hooks/useWidgetSync';
 import { todayString, formatDisplayDate } from '@/utils/dateHelpers';
 import { format, subDays, addDays } from 'date-fns';
-import { type Task } from '@/lib/api';
+import { ownerApi, type Task } from '@/lib/api';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, passcode, clearPasscode, setUser } = usePasscodeStore();
   const actualToday = todayString();
   const [selectedDate, setSelectedDate] = useState(actualToday);
+
+  // Bounce to unlock screen if passcode is cleared (e.g. 401)
+  useEffect(() => {
+    if (!passcode) {
+      router.replace('/(auth)/login');
+    }
+  }, [passcode, router]);
+
+  // Refresh owner profile when unlocked
+  useEffect(() => {
+    if (!passcode) return;
+    ownerApi
+      .getMe()
+      .then((data) => setUser(data.user))
+      .catch(() => {
+        // 401 interceptor clears passcode
+      });
+  }, [passcode, setUser]);
   
   const start = format(subDays(new Date(selectedDate), 14), 'yyyy-MM-dd');
   const end = format(addDays(new Date(selectedDate), 14), 'yyyy-MM-dd');
@@ -39,18 +57,40 @@ export default function HomeScreen() {
 
   // ── Widget sync ────────────────────────────────────────────────────────────
   const { syncWidgets, refreshWidgets } = useWidgetSync();
+  // Keep today's list so a streak earned on a future day still updates the widget.
+  const todaySnapshot = useRef<{ tasks: Task[]; completed: number; total: number }>({
+    tasks: [],
+    completed: 0,
+    total: 0,
+  });
 
-  // Helper: push today's data to widgets
   const pushToWidgets = useCallback(() => {
-    if (selectedDate !== actualToday) return;
     const todayTasks = tasks.filter((t) => t.date === actualToday);
+    if (selectedDate === actualToday || todayTasks.length > 0) {
+      const completed = selectedDate === actualToday
+        ? (stats?.completedTasks ?? todayTasks.filter((t) => t.isCompleted).length)
+        : todayTasks.filter((t) => t.isCompleted).length;
+      const total = selectedDate === actualToday
+        ? (stats?.totalTasks ?? todayTasks.length)
+        : todayTasks.length;
+      todaySnapshot.current = { tasks: todayTasks, completed, total };
+    }
+
+    const snap = todaySnapshot.current;
     syncWidgets(
-      todayTasks,
-      stats,
+      snap.tasks,
+      {
+        date: actualToday,
+        completedTasks: snap.completed,
+        totalTasks: snap.total,
+        totalScore: snap.total,
+        achievedScore: snap.completed,
+        bonusApplied: selectedDate === actualToday ? (stats?.bonusApplied ?? false) : false,
+      },
       user?.currentStreak ?? 0,
       user?.totalRating ?? 0,
-      user?.totalTasksCompleted ?? 0,
-      user?.totalTasksAssigned ?? 0,
+      snap.completed,
+      snap.total,
       actualToday,
     );
   }, [tasks, stats, user, actualToday, selectedDate, syncWidgets]);
@@ -62,19 +102,20 @@ export default function HomeScreen() {
     }
   }, [tasks, stats, loading, pushToWidgets]);
 
-  // Refresh widget UI when app comes to foreground
+  // Pull the latest streak when the app is opened again, then refresh widgets.
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
+        ownerApi.getMe().then((data) => setUser(data.user)).catch(() => {});
         refreshWidgets();
       }
     });
     return () => sub.remove();
-  }, [refreshWidgets]);
+  }, [refreshWidgets, setUser]);
   // ── End widget sync ────────────────────────────────────────────────────────
 
-  const handleLogout = async () => {
-    await logout();
+  const handleLock = async () => {
+    await clearPasscode();
     router.replace('/(auth)/login');
   };
 
@@ -143,9 +184,8 @@ export default function HomeScreen() {
         </View>
         <View style={styles.headerRight}>
           <RatingBadge
-            completed={user?.totalTasksCompleted ?? 0}
-            assigned={user?.totalTasksAssigned ?? 0}
-            rating={user?.totalRating ?? 0}
+            completed={stats?.completedTasks ?? 0}
+            assigned={stats?.totalTasks ?? 0}
           />
           <TouchableOpacity
             style={styles.addBtn}
@@ -158,8 +198,8 @@ export default function HomeScreen() {
           >
             <Text style={styles.addBtnText}>+</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-            <Text style={styles.logoutText}>Logout</Text>
+          <TouchableOpacity onPress={handleLock} style={styles.logoutBtn}>
+            <Text style={styles.logoutText}>Lock</Text>
           </TouchableOpacity>
         </View>
       </View>

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tasksApi, type Task } from '@/lib/api';
-import { useAuthStore } from '@/store/authStore';
+import { usePasscodeStore } from '@/store/passcodeStore';
 
 export const useTasksQuery = (date: string) => {
   return useQuery<Task[]>({
@@ -38,7 +38,7 @@ export const useToggleTask = (date: string) => {
       await qc.cancelQueries({ queryKey: ['tasks'] });
     },
     onSuccess: ({ currentStreak, totalRating, totalTasksCompleted, totalTasksAssigned }) => {
-      useAuthStore.getState().updateUser({ currentStreak, totalRating, totalTasksCompleted, totalTasksAssigned });
+      usePasscodeStore.getState().updateUser({ currentStreak, totalRating, totalTasksCompleted, totalTasksAssigned });
       qc.invalidateQueries({ queryKey: ['tasks'] });
       qc.invalidateQueries({ queryKey: ['stats'] });
     },

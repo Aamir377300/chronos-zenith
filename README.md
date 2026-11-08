@@ -27,10 +27,21 @@ chronos-zenith/
 
 ## Scoring System
 
-- Each task = **10 points**
-- `totalScore = totalTasks × 10`
-- `achievedScore = completedTasks × 10`
-- **Streak Bonus**: Complete 100% of tasks for 2 consecutive days → +10 bonus on Day 2
+- Each task = **1 point** (live engine)
+- `totalScore = totalTasks × 1`
+- `achievedScore = completedTasks × 1`
+- **Streak Bonus**: Complete 100% of tasks for 2 consecutive days → +1 bonus on Day 2
+
+---
+
+## Auth (single-user passcode)
+
+This is a **single-user** app. There is no email/password login.
+
+- Set `APP_PASSCODE` in the backend `.env`
+- Web and mobile ask for that passcode once, store it locally, and send it as the `x-passcode` header on every API request
+- A wrong/missing passcode returns **401** and the unlock screen shows again
+- Web + mobile stay in sync through the same MongoDB backend
 
 ---
 
@@ -49,7 +60,7 @@ chronos-zenith/
 ```bash
 cd backend
 cp .env.example .env
-# Edit .env with your MongoDB URI and JWT secret
+# Edit .env with your MongoDB URI and APP_PASSCODE
 
 npm install
 npm run dev
@@ -59,7 +70,7 @@ npm run dev
 **Seed demo data:**
 ```bash
 node src/scripts/seed.js
-# Demo login: demo@chronoszenith.com / demo1234
+# Unlock the app with APP_PASSCODE from your .env
 ```
 
 ---
@@ -95,12 +106,10 @@ npx expo start
 
 ## API Reference
 
-### Auth
-| Method | Endpoint         | Description       |
-|--------|-----------------|-------------------|
-| POST   | /auth/register  | Register new user |
-| POST   | /auth/login     | Login             |
-| GET    | /auth/me        | Get current user  |
+### Owner
+| Method | Endpoint | Description                |
+|--------|----------|----------------------------|
+| GET    | /me      | Get owner streak / rating  |
 
 ### Tasks
 | Method | Endpoint        | Description              |
@@ -116,7 +125,7 @@ npx expo start
 | GET    | /stats/:date   | Get stats for a date     |
 | GET    | /stats/history | Get last 30 days history |
 
-All task and stats endpoints require `Authorization: Bearer <token>` header.
+All `/me`, task, and stats endpoints require the `x-passcode` header.
 
 ---
 
@@ -126,8 +135,7 @@ All task and stats endpoints require `Authorization: Bearer <token>` header.
 ```
 PORT=5002
 MONGODB_URI=mongodb://localhost:27017/chronos_zenith
-JWT_SECRET=your_super_secret_key
-JWT_EXPIRES_IN=7d
+APP_PASSCODE=change-me
 NODE_ENV=development
 ```
 
@@ -147,9 +155,10 @@ EXPO_PUBLIC_API_URL=http://192.168.x.x:5002
 
 - ✅ Vertical timeline UI with animated task completion
 - ✅ Streak-weighted scoring engine with bonus logic
-- ✅ JWT authentication (register / login)
+- ✅ Single-user passcode unlock (web + mobile)
 - ✅ Optimistic UI updates on task toggle
-- ✅ Offline-first caching on mobile (AsyncStorage)
+- ✅ Passcode persistence on mobile (AsyncStorage)
 - ✅ Analytics screen with 14-day history
 - ✅ Responsive, mobile-first design
 - ✅ TypeScript throughout (web + mobile)
+- ✅ Android home-screen widgets (timeline + score)
