@@ -19,7 +19,7 @@ services:
     name: chronos-zenith-web
     runtime: node
     rootDir: web-dev
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     plan: free
     envVars:
