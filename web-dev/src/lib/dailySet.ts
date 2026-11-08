@@ -53,7 +53,7 @@ function datesFrom(start: string, end: string) {
  * so deleting one day's copy is not undone until that date is sent again.
  */
 export async function fillDailySet(titles: string[], dates: string[]) {
-  const clean = [...new Set(titles.map((t) => t.trim()).filter(Boolean))];
+  const clean = Array.from(new Set(titles.map((t) => t.trim()).filter(Boolean)));
   if (!clean.length || !dates.length) return 0;
   return tasksApi.createSet({ titles: clean, dates });
 }
